@@ -10,6 +10,7 @@ import {
   Picker,
   ImageBackground,
   Image,
+  ScrollView,
 } from 'react-native'
 import { reducer, initialState, TYPES } from './AppReducer'
 import { useMsgAfterSubmit } from './hooks'
@@ -17,6 +18,7 @@ import { useMsgAfterSubmit } from './hooks'
 import HeroSvg from './components/HeroSvg'
 import bgSound from './assets/music/background-music.mp3'
 import BackgroundSound from './components/BackgroundSound'
+
 function App() {
   const [
     {
@@ -46,7 +48,6 @@ function App() {
     isStoredState
   )
 
-  // useCallback helps prevent re-rendering via memoization
   const handleAnswerChange = useCallback(
     (value: string) => {
       if (/^\d+|[.]$/.test(value.toString()) || value === '') {
@@ -97,7 +98,6 @@ function App() {
 
   const activeTheme = themes[mode]
 
-  // Equivalent of componentDidMount
   useEffect(() => {
     dispatch({ type: TYPES.NEW_PROBLEM })
     const storedData = localStorage.getItem('state')
@@ -164,6 +164,12 @@ function App() {
     submitInputRef.current && submitInputRef.current.focus()
   })
 
+  // Helper to split enemies into rows of 3
+  const enemyRows = []
+  for (let i = 0; i < numOfEnemies; i += 3) {
+    enemyRows.push([...Array(Math.min(3, numOfEnemies - i))])
+  }
+
   return (
     <View
       style={[styles.root, { backgroundColor: activeTheme.backgroundColor }]}
@@ -173,127 +179,135 @@ function App() {
         style={styles.image}
         resizeMode="cover"
       >
-        <Text style={[styles.title, { color: activeTheme.textColor }]}>
-          Battle Math
-        </Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            style={styles.picker}
-            selectedValue={mode}
-            onValueChange={handleModePicker}
-            nativeID="operation-selector"
-          >
-            <Picker.Item label="Addition(+)" value="addition" />
-            <Picker.Item label="Subtraction(-)" value="subtraction" />
-            <Picker.Item label="Multiplication(*)" value="multiplication" />
-            <Picker.Item label="Division(/)" value="division" />
-          </Picker>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <Text style={[styles.title, { color: activeTheme.textColor }]}>
+            Battle Math
+          </Text>
 
-          <Picker
-            selectedValue={difficulty}
-            style={styles.picker}
-            onValueChange={handleDifficultyPicker}
-            nativeID="difficulty-selector"
-          >
-            <Picker.Item label="Easy" value="easy" />
-            <Picker.Item label="Medium" value="medium" />
-            <Picker.Item label="Hard" value="hard" />
-          </Picker>
+          <View style={styles.pickerContainer}>
+            <Picker
+              style={styles.picker}
+              selectedValue={mode}
+              onValueChange={handleModePicker}
+              nativeID="operation-selector"
+            >
+              <Picker.Item label="Addition(+)" value="addition" />
+              <Picker.Item label="Subtraction(-)" value="subtraction" />
+              <Picker.Item label="Multiplication(*)" value="multiplication" />
+              <Picker.Item label="Division(/)" value="division" />
+            </Picker>
 
-          <Picker
-            selectedValue={modeType}
-            style={styles.picker}
-            onValueChange={handleModeType}
-            nativeID="modeType-selector"
-          >
-            <Picker.Item label="Whole Number" value="wholeNumber" />
-            <Picker.Item label="Decimals" value="decimal" />
-          </Picker>
-        </View>
+            <Picker
+              selectedValue={difficulty}
+              style={styles.picker}
+              onValueChange={handleDifficultyPicker}
+              nativeID="difficulty-selector"
+            >
+              <Picker.Item label="Easy" value="easy" />
+              <Picker.Item label="Medium" value="medium" />
+              <Picker.Item label="Hard" value="hard" />
+            </Picker>
 
-        <View style={styles.battlefield}>
-          <View style={styles.container}>
-            <View nativeID="hero">
-              <Image
-                source={require('./assets/images/hero.png')}
-                style={{ width: 100, height: 200 }}
-              />
-            </View>
+            <Picker
+              selectedValue={modeType}
+              style={styles.picker}
+              onValueChange={handleModeType}
+              nativeID="modeType-selector"
+            >
+              <Picker.Item label="Whole Number" value="wholeNumber" />
+              <Picker.Item label="Decimals" value="decimal" />
+            </Picker>
           </View>
-          <View style={styles.container}>
-            {[...Array(numOfEnemies)].map((_, i) => (
-              <View testID="enemies" key={i}>
+
+          <View style={styles.battlefield}>
+            <View style={styles.container}>
+              <View nativeID="hero">
                 <Image
-                  source={require('./assets/images/orc.png')}
+                  source={require('./assets/images/hero.png')}
                   style={{ width: 100, height: 200 }}
                 />
               </View>
-            ))}
+            </View>
+
+            <View style={styles.container}>
+              {enemyRows.map((row, rowIndex) => (
+                <View
+                  key={rowIndex}
+                  style={{ flexDirection: 'row', justifyContent: 'center' }}
+                >
+                  {row.map((_, colIndex) => (
+                    <Image
+                      key={colIndex + rowIndex * 3}
+                      source={require('./assets/images/orc.png')}
+                      style={{ width: 100, height: 200 }}
+                    />
+                  ))}
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
-        {won ? (
-          <View>
-            <Text style={{ color: activeTheme.textColor }}>Victory!</Text>
-            <Button
-              onPress={handleRestart}
-              title="Restart"
-              color={activeTheme.buttonColor}
-              accessibilityLabel="Click this button to play again."
-            />
-          </View>
-        ) : (
-          <View style={styles.mathContainer}>
-            {submitMessageBlock}
-            <View style={styles.mathRow}>
-              <Text
-                nativeID="val1"
-                style={[styles.mathText, { color: activeTheme.textColor }]}
-              >
-                {val1}
-              </Text>
-              <Text
-                nativeID="operator"
-                style={[styles.mathText, { color: activeTheme.textColor }]}
-              >
-                {operator}
-              </Text>
-              <Text
-                nativeID="val2"
-                style={[styles.mathText, { color: activeTheme.textColor }]}
-              >
-                {val2}
-              </Text>
-              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>
-                =
-              </Text>
-              <TextInput
-                nativeID="answer-input"
-                style={styles.input}
-                onChangeText={handleAnswerChange}
-                onSubmitEditing={handleSubmit}
-                value={answer}
-                ref={submitInputRef}
+
+          {won ? (
+            <View>
+              <Text style={{ color: activeTheme.textColor }}>Victory!</Text>
+              <Button
+                onPress={handleRestart}
+                title="Restart"
+                color={activeTheme.buttonColor}
+                accessibilityLabel="Click this button to play again."
               />
             </View>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                { backgroundColor: activeTheme.buttonColor },
-              ]}
-              testID="submit"
-              onPress={handleSubmit}
-              accessibilityLabel="Learn more about this purple button"
-            >
-              <Text style={styles.buttonText}>Submit</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        <BackgroundSound url={bgSound} />
+          ) : (
+            <View style={styles.mathContainer}>
+              {submitMessageBlock}
+              <View style={styles.mathRow}>
+                <Text
+                  nativeID="val1"
+                  style={[styles.mathText, { color: activeTheme.textColor }]}
+                >
+                  {val1}
+                </Text>
+                <Text
+                  nativeID="operator"
+                  style={[styles.mathText, { color: activeTheme.textColor }]}
+                >
+                  {operator}
+                </Text>
+                <Text
+                  nativeID="val2"
+                  style={[styles.mathText, { color: activeTheme.textColor }]}
+                >
+                  {val2}
+                </Text>
+                <Text style={[styles.mathText, { color: activeTheme.textColor }]}>
+                  =
+                </Text>
+                <TextInput
+                  nativeID="answer-input"
+                  style={styles.input}
+                  onChangeText={handleAnswerChange}
+                  onSubmitEditing={handleSubmit}
+                  value={answer}
+                  ref={submitInputRef}
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: activeTheme.buttonColor }]}
+                testID="submit"
+                onPress={handleSubmit}
+              >
+                <Text style={styles.buttonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          <BackgroundSound url={bgSound} />
+        </ScrollView>
       </ImageBackground>
     </View>
   )
 }
 
+// ----------------- Styles (same as before) -----------------
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -311,13 +325,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
   },
-  title: {
-    fontSize: 32,
-    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
-  },
-  pickerContainer: {
-    flexDirection: 'row',
-  },
+  title: { fontSize: 32, fontFamily: `"Comic Sans MS", cursive, sans-serif` },
+  pickerContainer: { flexDirection: 'row' },
   picker: {
     height: 40,
     width: 150,
@@ -326,40 +335,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginLeft: 10,
   },
-  battlefield: {
-    flex: 1,
-    flexDirection: 'row',
-    width: '100%',
-    paddingHorizontal: 16,
-  },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-  },
-  character: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  hero: {
-    backgroundColor: 'blue',
-  },
-  enemy: {
-    backgroundColor: 'red',
-  },
-  mathContainer: {
-    paddingVertical: 16,
-  },
-  mathRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingBottom: 16,
-  },
-  mathText: {
-    fontSize: 40,
-    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
-  },
+  battlefield: { flex: 1, flexDirection: 'row', width: '100%', paddingHorizontal: 16 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'space-evenly' },
+  mathContainer: { paddingVertical: 16 },
+  mathRow: { flexDirection: 'row', justifyContent: 'center', paddingBottom: 16 },
+  mathText: { fontSize: 40, fontFamily: `"Comic Sans MS", cursive, sans-serif` },
   input: {
     height: 60,
     width: 200,
@@ -371,62 +351,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontFamily: `"Comic Sans MS", cursive, sans-serif`,
   },
-  button: {
-    height: 60,
-    width: 200,
-    backgroundColor: '#841584',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 40,
-  },
-  msgTextError: {
-    color: 'red',
-    fontSize: 25,
-  },
-  msgTextSuccess: {
-    color: 'green',
-    fontSize: 25,
-  },
-  submitMsgWrapper: {
-    paddingBottom: 15,
-    fontSize: 40,
-    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
-  },
+  button: { height: 60, width: 200, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  buttonText: { color: '#fff', fontSize: 40 },
+  msgTextError: { color: 'red', fontSize: 25 },
+  msgTextSuccess: { color: 'green', fontSize: 25 },
+  submitMsgWrapper: { paddingBottom: 15, fontSize: 40, fontFamily: `"Comic Sans MS", cursive, sans-serif` },
 })
 
 const themes = {
-  addition: {
-    backgroundColor: 'darkslateblue',
-    heroColor: 'rgba(23, 190, 187, 1)',
-    enemyColor: 'rgba(228, 87, 46, 1)',
-    buttonColor: 'rgba(255, 201, 20, 1)',
-    textColor: '#fff',
-  },
-  subtraction: {
-    backgroundColor: 'deepskyblue',
-    heroColor: 'rgba(23, 190, 187, 1)',
-    enemyColor: 'rgba(228, 87, 46, 1)',
-    buttonColor: 'rgba(255, 201, 20, 1)',
-    textColor: '#000',
-  },
-  multiplication: {
-    backgroundColor: 'darkslategrey',
-    heroColor: 'rgba(23, 190, 187, 1)',
-    enemyColor: 'rgba(228, 87, 46, 1)',
-    buttonColor: 'rgba(255, 201, 20, 1)',
-    textColor: '#fff',
-  },
-  division: {
-    backgroundColor: 'turquoise',
-    heroColor: 'rgba(23, 190, 187, 1)',
-    enemyColor: 'rgba(228, 87, 46, 1)',
-    buttonColor: 'rgba(255, 201, 20, 1)',
-    textColor: '#000',
-  },
+  addition: { backgroundColor: 'darkslateblue', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#fff' },
+  subtraction: { backgroundColor: 'deepskyblue', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#000' },
+  multiplication: { backgroundColor: 'darkslategrey', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#fff' },
+  division: { backgroundColor: 'turquoise', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#000' },
 }
 
 export default App
