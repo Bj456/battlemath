@@ -6,12 +6,13 @@ import {
   TextInput,
   Button,
   TouchableOpacity,
-  Picker,
   ImageBackground,
   Image,
 } from 'react-native'
+import { Picker } from '@react-native-picker/picker'
 import { reducer, initialState, TYPES } from './AppReducer'
 import { useMsgAfterSubmit } from './hooks'
+
 import BackgroundSound from './components/BackgroundSound'
 import bgSound from './assets/music/background-music.mp3'
 
@@ -33,7 +34,7 @@ function App() {
     dispatch,
   ] = useReducer(reducer, initialState)
 
-  let submitInputRef = React.useRef<TextInput>(null)
+  const submitInputRef = React.useRef<TextInput>(null)
 
   const variablesToLookFor: [number, number] = [
     previousNumOfEnemies,
@@ -54,33 +55,21 @@ function App() {
   )
 
   const handleModePicker = useCallback(
-    (mode: string) => {
-      dispatch({ type: TYPES.SET_MODE, payload: mode })
-    },
+    (mode: string) => dispatch({ type: TYPES.SET_MODE, payload: mode }),
     [dispatch]
   )
-
   const handleModeType = useCallback(
-    (mode: string) => {
-      dispatch({ type: TYPES.SET_MODE_TYPES, payload: mode })
-    },
+    (mode: string) => dispatch({ type: TYPES.SET_MODE_TYPES, payload: mode }),
     [dispatch]
   )
-
   const handleDifficultyPicker = useCallback(
-    (difficulty: string) => {
-      dispatch({ type: TYPES.SET_DIFFICULTY, payload: difficulty })
-    },
+    (difficulty: string) => dispatch({ type: TYPES.SET_DIFFICULTY, payload: difficulty }),
     [dispatch]
   )
-
-  const handleRestart = useCallback(() => {
-    dispatch({ type: TYPES.RESTART })
-  }, [dispatch])
-
+  const handleRestart = useCallback(() => dispatch({ type: TYPES.RESTART }), [dispatch])
   const handleSubmit = useCallback(() => {
     dispatch({ type: TYPES.CHECK_ANSWER })
-    if (submitInputRef.current) submitInputRef.current.focus()
+    submitInputRef.current?.focus()
   }, [dispatch])
 
   const activeTheme = themes[mode]
@@ -90,22 +79,6 @@ function App() {
     const storedData = localStorage.getItem('state')
     if (storedData) {
       dispatch({ type: TYPES.RESTORE_STATE, payload: JSON.parse(storedData) })
-    } else {
-      localStorage.setItem(
-        'state',
-        JSON.stringify({
-          answer,
-          numOfEnemies,
-          val1,
-          val2,
-          won,
-          operator,
-          mode,
-          difficulty,
-          modeType,
-          previousNumOfEnemies,
-        })
-      )
     }
   }, [])
 
@@ -125,22 +98,9 @@ function App() {
         previousNumOfEnemies,
       })
     )
-  }, [
-    answer,
-    numOfEnemies,
-    won,
-    val1,
-    val2,
-    operator,
-    mode,
-    difficulty,
-    modeType,
-    previousNumOfEnemies,
-  ])
+  }, [answer, numOfEnemies, won, val1, val2, operator, mode, difficulty, modeType, previousNumOfEnemies])
 
-  const submitMsgText = isErrorMessage
-    ? styles.msgTextError
-    : styles.msgTextSuccess
+  const submitMsgText = isErrorMessage ? styles.msgTextError : styles.msgTextSuccess
   const submitMessageBlock = !!msg && (
     <View style={styles.submitMsgWrapper}>
       <Text style={submitMsgText}>{msg}</Text>
@@ -148,8 +108,32 @@ function App() {
   )
 
   useEffect(() => {
-    submitInputRef.current && submitInputRef.current.focus()
+    submitInputRef.current?.focus()
   })
+
+  // Enemy rows logic: max 4 per row, 2 rows max
+  const renderEnemies = () => {
+    const enemies: JSX.Element[] = []
+    for (let i = 0; i < numOfEnemies && i < 8; i++) {
+      enemies.push(
+        <Image
+          key={i}
+          source={require('./assets/images/orc.png')}
+          style={styles.enemyImage}
+        />
+      )
+    }
+
+    const firstRow = enemies.slice(0, 4)
+    const secondRow = enemies.slice(4, 8)
+
+    return (
+      <View style={styles.enemyContainer}>
+        <View style={styles.enemyRow}>{firstRow}</View>
+        {secondRow.length > 0 && <View style={styles.enemyRow}>{secondRow}</View>}
+      </View>
+    )
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: activeTheme.backgroundColor }]}>
@@ -158,16 +142,14 @@ function App() {
         style={styles.image}
         resizeMode="cover"
       >
-        <Text style={[styles.title, { color: activeTheme.textColor }]}>
-          Battle Math
-        </Text>
+        <Text style={[styles.title, { color: activeTheme.textColor }]}>Battle Math</Text>
 
-        {/* Picker section */}
         <View style={styles.pickerContainer}>
           <Picker
             style={styles.picker}
             selectedValue={mode}
             onValueChange={handleModePicker}
+            nativeID="operation-selector"
           >
             <Picker.Item label="Addition(+)" value="addition" />
             <Picker.Item label="Subtraction(-)" value="subtraction" />
@@ -179,6 +161,7 @@ function App() {
             selectedValue={difficulty}
             style={styles.picker}
             onValueChange={handleDifficultyPicker}
+            nativeID="difficulty-selector"
           >
             <Picker.Item label="Easy" value="easy" />
             <Picker.Item label="Medium" value="medium" />
@@ -189,32 +172,21 @@ function App() {
             selectedValue={modeType}
             style={styles.picker}
             onValueChange={handleModeType}
+            nativeID="modeType-selector"
           >
             <Picker.Item label="Whole Number" value="wholeNumber" />
             <Picker.Item label="Decimals" value="decimal" />
           </Picker>
         </View>
 
-        {/* Battlefield */}
         <View style={styles.battlefield}>
-          <View style={styles.heroContainer}>
-            <Image
-              source={require('./assets/images/hero.png')}
-              style={{ width: 100, height: 200 }}
-            />
-          </View>
-          <View style={styles.enemyContainer}>
-            {[...Array(Math.min(numOfEnemies, 8))].map((_, i) => (
-              <Image
-                key={i}
-                source={require('./assets/images/orc.png')}
-                style={styles.enemyImage}
-              />
-            ))}
-          </View>
+          <Image
+            source={require('./assets/images/hero.png')}
+            style={styles.heroImage}
+          />
+          {renderEnemies()}
         </View>
 
-        {/* Math section */}
         {won ? (
           <View>
             <Text style={{ color: activeTheme.textColor }}>Victory!</Text>
@@ -228,18 +200,10 @@ function App() {
           <View style={styles.mathContainer}>
             {submitMessageBlock}
             <View style={styles.mathRow}>
-              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>
-                {val1}
-              </Text>
-              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>
-                {operator}
-              </Text>
-              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>
-                {val2}
-              </Text>
-              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>
-                =
-              </Text>
+              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>{val1}</Text>
+              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>{operator}</Text>
+              <Text style={[styles.mathText, { color: activeTheme.textColor }]}>{val2}</Text>
+              <Text style={[styles.mathText, { color: activeTheme.textColor }]}> = </Text>
               <TextInput
                 style={styles.input}
                 onChangeText={handleAnswerChange}
@@ -256,6 +220,7 @@ function App() {
             </TouchableOpacity>
           </View>
         )}
+
         <BackgroundSound url={bgSound} />
       </ImageBackground>
     </View>
@@ -263,23 +228,71 @@ function App() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'flex-start' },
-  image: { width: '100%', flex: 1, paddingVertical: 16, alignItems: 'center' },
-  title: { fontSize: 32, fontFamily: `"Comic Sans MS", cursive, sans-serif` },
-  pickerContainer: { flexDirection: 'row', marginBottom: 10 },
-  picker: { height: 40, width: 150, marginHorizontal: 5 },
-  battlefield: { flexDirection: 'row', width: '100%', marginVertical: 20 },
-  heroContainer: { width: 120, alignItems: 'center' },
-  enemyContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    maxWidth: 420, // 4 enemies per row
-    justifyContent: 'center',
+  root: {
+    flex: 1,
+    alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
-  enemyImage: { width: 100, height: 200, margin: 5 },
-  mathContainer: { paddingVertical: 16 },
-  mathRow: { flexDirection: 'row', justifyContent: 'center', paddingBottom: 16 },
-  mathText: { fontSize: 40, fontFamily: `"Comic Sans MS", cursive, sans-serif` },
+  image: {
+    width: '100%',
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    marginVertical: 10,
+  },
+  picker: {
+    height: 40,
+    width: 150,
+    marginLeft: 10,
+  },
+  battlefield: {
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  heroImage: {
+    width: 100,
+    height: 200,
+    marginBottom: 10,
+  },
+  enemyContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  enemyRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  enemyImage: {
+    width: 100,
+    height: 200,
+    marginHorizontal: 5,
+  },
+  mathContainer: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  mathRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingBottom: 16,
+  },
+  mathText: {
+    fontSize: 40,
+  },
   input: {
     height: 60,
     width: 200,
@@ -289,20 +302,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 40,
     borderRadius: 8,
-    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
+    textAlign: 'center',
   },
-  button: { height: 60, width: 200, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
-  buttonText: { color: '#fff', fontSize: 40 },
-  msgTextError: { color: 'red', fontSize: 25 },
-  msgTextSuccess: { color: 'green', fontSize: 25 },
-  submitMsgWrapper: { paddingBottom: 15, fontSize: 40 },
+  button: {
+    height: 60,
+    width: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 40,
+  },
+  msgTextError: {
+    color: 'red',
+    fontSize: 25,
+  },
+  msgTextSuccess: {
+    color: 'green',
+    fontSize: 25,
+  },
+  submitMsgWrapper: {
+    paddingBottom: 15,
+  },
 })
 
 const themes = {
-  addition: { backgroundColor: 'darkslateblue', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#fff' },
-  subtraction: { backgroundColor: 'deepskyblue', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#000' },
-  multiplication: { backgroundColor: 'darkslategrey', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#fff' },
-  division: { backgroundColor: 'turquoise', heroColor: 'rgba(23, 190, 187, 1)', enemyColor: 'rgba(228, 87, 46, 1)', buttonColor: 'rgba(255, 201, 20, 1)', textColor: '#000' },
+  addition: { backgroundColor: 'darkslateblue', buttonColor: '#FFC914', textColor: '#fff' },
+  subtraction: { backgroundColor: 'deepskyblue', buttonColor: '#FFC914', textColor: '#000' },
+  multiplication: { backgroundColor: 'darkslategrey', buttonColor: '#FFC914', textColor: '#fff' },
+  division: { backgroundColor: 'turquoise', buttonColor: '#FFC914', textColor: '#000' },
 }
 
 export default App
