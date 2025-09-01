@@ -4,10 +4,7 @@ import {
   Text,
   View,
   TextInput,
-  Button,
   TouchableOpacity,
-  // @ts-ignore
-  Picker,
   ImageBackground,
   Image,
 } from 'react-native'
@@ -17,6 +14,7 @@ import { useMsgAfterSubmit } from './hooks'
 import HeroSvg from './components/HeroSvg'
 import bgSound from './assets/music/background-music.mp3'
 import BackgroundSound from './components/BackgroundSound'
+
 function App() {
   const [
     {
@@ -46,42 +44,11 @@ function App() {
     isStoredState
   )
 
-  // useCallback helps prevent re-rendering via memoization
   const handleAnswerChange = useCallback(
     (value: string) => {
       if (/^\d+|[.]$/.test(value.toString()) || value === '') {
         dispatch({ type: TYPES.SET_ANSWER, payload: value })
       }
-    },
-    [dispatch]
-  )
-
-  const handleModePicker = useCallback(
-    (mode: string) => {
-      dispatch({
-        type: TYPES.SET_MODE,
-        payload: mode,
-      })
-    },
-    [dispatch]
-  )
-
-  const handleModeType = useCallback(
-    (mode: string) => {
-      dispatch({
-        type: TYPES.SET_MODE_TYPES,
-        payload: mode,
-      })
-    },
-    [dispatch]
-  )
-
-  const handleDifficultyPicker = useCallback(
-    (difficulty: string) => {
-      dispatch({
-        type: TYPES.SET_DIFFICULTY,
-        payload: difficulty,
-      })
     },
     [dispatch]
   )
@@ -95,9 +62,9 @@ function App() {
     if (submitInputRef.current) submitInputRef.current.focus()
   }, [dispatch])
 
+  const hasLost = numOfEnemies >= 5 // Lose condition
   const activeTheme = themes[mode]
 
-  // Equivalent of componentDidMount
   useEffect(() => {
     dispatch({ type: TYPES.NEW_PROBLEM })
     const storedData = localStorage.getItem('state')
@@ -176,50 +143,17 @@ function App() {
         <Text style={[styles.title, { color: activeTheme.textColor }]}>
           Battle Math
         </Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            style={styles.picker}
-            selectedValue={mode}
-            onValueChange={handleModePicker}
-            nativeID="operation-selector"
-          >
-            <Picker.Item label="Addition(+)" value="addition" />
-            <Picker.Item label="Subtraction(-)" value="subtraction" />
-            <Picker.Item label="Multiplication(*)" value="multiplication" />
-            <Picker.Item label="Division(/)" value="division" />
-          </Picker>
-
-          <Picker
-            selectedValue={difficulty}
-            style={styles.picker}
-            onValueChange={handleDifficultyPicker}
-            nativeID="difficulty-selector"
-          >
-            <Picker.Item label="Easy" value="easy" />
-            <Picker.Item label="Medium" value="medium" />
-            <Picker.Item label="Hard" value="hard" />
-          </Picker>
-
-          <Picker
-            selectedValue={modeType}
-            style={styles.picker}
-            onValueChange={handleModeType}
-            nativeID="modeType-selector"
-          >
-            <Picker.Item label="Whole Number" value="wholeNumber" />
-            <Picker.Item label="Decimals" value="decimal" />
-          </Picker>
-        </View>
 
         <View style={styles.battlefield}>
+          {/* Hero on left */}
           <View style={styles.container}>
-            <View nativeID="hero">
-              <Image
-                source={require('./assets/images/hero.png')}
-                style={{ width: 100, height: 200 }}
-              />
-            </View>
+            <Image
+              source={require('./assets/images/hero.png')}
+              style={{ width: 100, height: 200 }}
+            />
           </View>
+
+          {/* Enemies on right */}
           <View style={styles.container}>
             {[...Array(numOfEnemies)].map((_, i) => (
               <View testID="enemies" key={i}>
@@ -231,15 +165,25 @@ function App() {
             ))}
           </View>
         </View>
-        {won ? (
-          <View>
-            <Text style={{ color: activeTheme.textColor }}>Victory!</Text>
-            <Button
+
+        {/* Victory or Lose message */}
+        {won || hasLost ? (
+          <View style={styles.mathContainer}>
+            <Text
+              style={{
+                color: activeTheme.textColor,
+                fontSize: 40,
+                marginBottom: 10,
+              }}
+            >
+              {won ? 'Victory!' : 'You Lose! Try Again'}
+            </Text>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: activeTheme.buttonColor }]}
               onPress={handleRestart}
-              title="Restart"
-              color={activeTheme.buttonColor}
-              accessibilityLabel="Click this button to play again."
-            />
+            >
+              <Text style={styles.buttonText}>Play Again</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.mathContainer}>
@@ -276,18 +220,15 @@ function App() {
               />
             </View>
             <TouchableOpacity
-              style={[
-                styles.button,
-                { backgroundColor: activeTheme.buttonColor },
-              ]}
+              style={[styles.button, { backgroundColor: activeTheme.buttonColor }]}
               testID="submit"
               onPress={handleSubmit}
-              accessibilityLabel="Learn more about this purple button"
             >
               <Text style={styles.buttonText}>Submit</Text>
             </TouchableOpacity>
           </View>
         )}
+
         <BackgroundSound url={bgSound} />
       </ImageBackground>
     </View>
@@ -315,17 +256,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontFamily: `"Comic Sans MS", cursive, sans-serif`,
   },
-  pickerContainer: {
-    flexDirection: 'row',
-  },
-  picker: {
-    height: 40,
-    width: 150,
-    borderRadius: 8,
-    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
-    textAlign: 'center',
-    marginLeft: 10,
-  },
   battlefield: {
     flex: 1,
     flexDirection: 'row',
@@ -336,17 +266,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-evenly',
-  },
-  character: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  hero: {
-    backgroundColor: 'blue',
-  },
-  enemy: {
-    backgroundColor: 'red',
   },
   mathContainer: {
     paddingVertical: 16,
