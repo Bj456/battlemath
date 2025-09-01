@@ -4,10 +4,13 @@ import {
   Text,
   View,
   TextInput,
+  Button,
   TouchableOpacity,
   ImageBackground,
   Image,
 } from 'react-native'
+// @ts-ignore
+import { Picker } from '@react-native-picker/picker'
 import { reducer, initialState, TYPES } from './AppReducer'
 import { useMsgAfterSubmit } from './hooks'
 
@@ -34,6 +37,7 @@ function App() {
   ] = useReducer(reducer, initialState)
 
   let submitInputRef = React.useRef<TextInput>(null)
+  const maxEnemies = 5
 
   const variablesToLookFor: [number, number] = [
     previousNumOfEnemies,
@@ -53,6 +57,36 @@ function App() {
     [dispatch]
   )
 
+  const handleModePicker = useCallback(
+    (mode: string) => {
+      dispatch({
+        type: TYPES.SET_MODE,
+        payload: mode,
+      })
+    },
+    [dispatch]
+  )
+
+  const handleModeType = useCallback(
+    (mode: string) => {
+      dispatch({
+        type: TYPES.SET_MODE_TYPES,
+        payload: mode,
+      })
+    },
+    [dispatch]
+  )
+
+  const handleDifficultyPicker = useCallback(
+    (difficulty: string) => {
+      dispatch({
+        type: TYPES.SET_DIFFICULTY,
+        payload: difficulty,
+      })
+    },
+    [dispatch]
+  )
+
   const handleRestart = useCallback(() => {
     dispatch({ type: TYPES.RESTART })
   }, [dispatch])
@@ -62,9 +96,9 @@ function App() {
     if (submitInputRef.current) submitInputRef.current.focus()
   }, [dispatch])
 
-  const hasLost = numOfEnemies >= 5 // Lose condition
   const activeTheme = themes[mode]
 
+  // componentDidMount equivalent
   useEffect(() => {
     dispatch({ type: TYPES.NEW_PROBLEM })
     const storedData = localStorage.getItem('state')
@@ -131,6 +165,8 @@ function App() {
     submitInputRef.current && submitInputRef.current.focus()
   })
 
+  const lost = numOfEnemies >= maxEnemies
+
   return (
     <View
       style={[styles.root, { backgroundColor: activeTheme.backgroundColor }]}
@@ -144,18 +180,55 @@ function App() {
           Battle Math
         </Text>
 
+        {/* PICKERS - mode, difficulty, modeType */}
+        <View style={styles.pickerContainer}>
+          <Picker
+            style={styles.picker}
+            selectedValue={mode}
+            onValueChange={handleModePicker}
+            nativeID="operation-selector"
+          >
+            <Picker.Item label="Addition(+)" value="addition" />
+            <Picker.Item label="Subtraction(-)" value="subtraction" />
+            <Picker.Item label="Multiplication(*)" value="multiplication" />
+            <Picker.Item label="Division(/)" value="division" />
+          </Picker>
+
+          <Picker
+            selectedValue={difficulty}
+            style={styles.picker}
+            onValueChange={handleDifficultyPicker}
+            nativeID="difficulty-selector"
+          >
+            <Picker.Item label="Easy" value="easy" />
+            <Picker.Item label="Medium" value="medium" />
+            <Picker.Item label="Hard" value="hard" />
+          </Picker>
+
+          <Picker
+            selectedValue={modeType}
+            style={styles.picker}
+            onValueChange={handleModeType}
+            nativeID="modeType-selector"
+          >
+            <Picker.Item label="Whole Number" value="wholeNumber" />
+            <Picker.Item label="Decimals" value="decimal" />
+          </Picker>
+        </View>
+
+        {/* BATTLEFIELD */}
         <View style={styles.battlefield}>
-          {/* Hero on left */}
           <View style={styles.container}>
-            <Image
-              source={require('./assets/images/hero.png')}
-              style={{ width: 100, height: 200 }}
-            />
+            <View nativeID="hero">
+              <Image
+                source={require('./assets/images/hero.png')}
+                style={{ width: 100, height: 200 }}
+              />
+            </View>
           </View>
 
-          {/* Enemies on right */}
           <View style={styles.container}>
-            {[...Array(numOfEnemies)].map((_, i) => (
+            {[...Array(Math.min(numOfEnemies, maxEnemies))].map((_, i) => (
               <View testID="enemies" key={i}>
                 <Image
                   source={require('./assets/images/orc.png')}
@@ -166,24 +239,25 @@ function App() {
           </View>
         </View>
 
-        {/* Victory or Lose message */}
-        {won || hasLost ? (
-          <View style={styles.mathContainer}>
-            <Text
-              style={{
-                color: activeTheme.textColor,
-                fontSize: 40,
-                marginBottom: 10,
-              }}
-            >
-              {won ? 'Victory!' : 'You Lose! Try Again'}
-            </Text>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: activeTheme.buttonColor }]}
+        {/* WIN / LOSE LOGIC */}
+        {won ? (
+          <View>
+            <Text style={{ color: activeTheme.textColor }}>Victory!</Text>
+            <Button
               onPress={handleRestart}
-            >
-              <Text style={styles.buttonText}>Play Again</Text>
-            </TouchableOpacity>
+              title="Restart"
+              color={activeTheme.buttonColor}
+              accessibilityLabel="Click this button to play again."
+            />
+          </View>
+        ) : lost ? (
+          <View>
+            <Text style={{ color: 'red', fontSize: 32 }}>You Lose!</Text>
+            <Button
+              onPress={handleRestart}
+              title="Play Again"
+              color={activeTheme.buttonColor}
+            />
           </View>
         ) : (
           <View style={styles.mathContainer}>
@@ -220,7 +294,10 @@ function App() {
               />
             </View>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: activeTheme.buttonColor }]}
+              style={[
+                styles.button,
+                { backgroundColor: activeTheme.buttonColor },
+              ]}
               testID="submit"
               onPress={handleSubmit}
             >
@@ -228,7 +305,6 @@ function App() {
             </TouchableOpacity>
           </View>
         )}
-
         <BackgroundSound url={bgSound} />
       </ImageBackground>
     </View>
@@ -255,6 +331,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontFamily: `"Comic Sans MS", cursive, sans-serif`,
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+  },
+  picker: {
+    height: 40,
+    width: 150,
+    borderRadius: 8,
+    fontFamily: `"Comic Sans MS", cursive, sans-serif`,
+    textAlign: 'center',
+    marginLeft: 10,
   },
   battlefield: {
     flex: 1,
