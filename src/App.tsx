@@ -127,20 +127,28 @@ function App() {
         </View>
 
         <View style={styles.battlefield}>
-          {/* Hero left */}
-          <View style={styles.heroColumn}>
-            <Image source={require('./assets/images/hero.png')} style={styles.heroImage} />
-          </View>
+  {/* Hero on left */}
+  <View style={styles.heroContainer}>
+    <Image
+      source={require('./assets/images/hero.png')}
+      style={styles.heroImage}
+      resizeMode="contain"
+    />
+  </View>
 
-          {/* Enemies right */}
-          <View style={styles.enemiesColumn}>
-            <View style={styles.enemiesWrapper}>
-              {[...Array(displayedEnemies)].map((_, i) => (
-                <Image key={i} source={require('./assets/images/orc.png')} style={styles.enemyImage} />
-              ))}
-            </View>
-          </View>
-        </View>
+  {/* Enemies on right in 2 rows x 4 per row */}
+  <View style={styles.enemiesContainer}>
+    {[...Array(Math.min(numOfEnemies, 8))].map((_, i) => (
+      <View key={i} style={styles.enemyWrapper}>
+        <Image
+          source={require('./assets/images/orc.png')}
+          style={styles.enemyImage}
+          resizeMode="contain"
+        />
+      </View>
+    ))}
+  </View>
+</View>
 
         {won ? (
           <View>
