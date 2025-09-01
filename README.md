@@ -51,3 +51,5 @@ npm run build
 - [x] Deploy to github pages
 - [ ] Point System
 - [x] Character Arts enemies
+This project is based on battlemath by Jessie R Weigel (MIT License).
+Original: https://github.com/JesseRWeigel/battlemath
