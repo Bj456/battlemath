@@ -1,1 +1,16 @@
+/* Reset and full-screen fix */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* white scroll हट जाएगा */
+  background-color: #000; /* optional - black background */
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
 
